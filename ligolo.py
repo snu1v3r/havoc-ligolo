@@ -31,8 +31,10 @@ ligolo_install_path = "/data/extensions/havoc-ligolo/"
 
 while not os.path.exists(ligolo_current_dir + ligolo_install_path):
     # not installed through havoc-store so prompt for the path
-    ligolo_install_path = ""
-    havocui.inputdialog("Install path", "Please enter your install path here for the module to work correctly:")
+    ligolo_current_dir = "" # cannot be used because location of ligolo relative to cwd is unknown
+    ligolo_install_path = havocui.inputdialog("Install path", "Please enter your install path here for the module to work correctly:").decode()
+    if not ligolo_install_path.endswith('/'):
+        ligolo_install_path += '/'
 
 settings_pane = havocui.Widget("Ligolo Settings", True)
 sudo_command = "" # this is the wrapper for what will be passed to run a command as admin
@@ -186,9 +188,10 @@ else:
         with open(ligolo_conf_path, "r") as fp:
             settings_ligolo = json.load(fp)
     if not os.path.exists(agent_bin) or not os.path.exists(proxy_bin):
+        save_cwd = os.getcwd() # if ligolo is not installed through the store ligolo_current_dir was reset to empty string
         os.chdir("%sligolo-ng/" % (ligolo_current_dir + ligolo_install_path))
         os.system("GOOS=windows go build -o agent.exe cmd/agent/main.go")
         os.system("go build -o proxy cmd/proxy/main.go")
-        os.chdir(ligolo_current_dir)
+        os.chdir(save_cwd) # restore the current working directory to the original value
     havoc.RegisterCommand( run_client, "", "ligolo-ng", "Connect back to the ligolo server.", 0, "", "" )
     havocui.createtab("Ligolo", "Start server", start_server, "Add IP range", add_ip_range, "Settings", open_settings)
